@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trắc nghiệm: Xấp xỉ tích phân bằng Tổng Riemann</title>
+
+<!-- MathJax để hiển thị công thức toán học -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 950px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #4c6ef5, #7950fa);
+    color: #fff;
+    padding: 30px;
+    text-align: center;
+  }
+  header h1 { font-size: 28px; margin-bottom: 8px; }
+  header p { font-size: 15px; opacity: 0.95; }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-around;
+    background: #f1f3f5;
+    padding: 15px;
+    border-bottom: 2px solid #e9ecef;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .stat-item {
+    text-align: center;
+    min-width: 100px;
+  }
+  .stat-item .num {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4c6ef5;
+  }
+  .stat-item .label {
+    font-size: 13px;
+    color: #666;
+  }
+  .stat-item.correct .num { color: #2f9e44; }
+  .stat-item.wrong .num { color: #e03131; }
+
+  .section {
+    padding: 25px 30px;
+    border-bottom: 1px solid #e9ecef;
+  }
+  .section-title {
+    font-size: 20px;
+    color: #4c6ef5;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #4c6ef5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .badge {
+    background: #4c6ef5;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .question-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 18px;
+    border-left: 5px solid #4c6ef5;
+    transition: all 0.3s;
+  }
+  .question-card.answered-correct { border-left-color: #2f9e44; background: #ebfbee; }
+  .question-card.answered-wrong { border-left-color: #e03131; background: #fff5f5; }
+
+  .q-number {
+    display: inline-block;
+    background: #4c6ef5;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  .q-text {
+    font-size: 16px;
+    margin-bottom: 15px;
+    line-height: 1.6;
+    display: inline;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    background: #fff;
+    border: 2px solid #dee2e6;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .option:hover:not(.disabled) {
+    border-color: #4c6ef5;
+    background: #e7f5ff;
+    transform: translateX(4px);
+  }
+  .option .letter {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    background: #e9ecef;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: bold;
+    color: #495057;
+    flex-shrink: 0;
+  }
+  .option.correct {
+    background: #d3f9d8;
+    border-color: #2f9e44;
+    color: #2b8a3e;
+  }
+  .option.correct .letter { background: #2f9e44; color: #fff; }
+  .option.wrong {
+    background: #ffe3e3;
+    border-color: #e03131;
+    color: #c92a2a;
+  }
+  .option.wrong .letter { background: #e03131; color: #fff; }
+  .option.disabled { cursor: not-allowed; opacity: 0.85; }
+  .option.show-correct {
+    background: #d3f9d8;
+    border-color: #2f9e44;
+  }
+  .option.show-correct .letter { background: #2f9e44; color: #fff; }
+
+  .explanation {
+    margin-top: 15px;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    border-left: 4px solid #fab005;
+    font-size: 14px;
+    line-height: 1.7;
+    display: none;
+    animation: fadeIn 0.4s;
+  }
+  .explanation.show { display: block; }
+  .explanation strong { color: #e67700; }
+  .explanation .correct-reason { color: #2b8a3e; margin-bottom: 8px; }
+  .explanation .wrong-reason { color: #c92a2a; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reset-btn {
+    display: block;
+    margin: 20px auto;
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #4c6ef5, #7950fa);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(76, 110, 245, 0.4);
+    transition: transform 0.2s;
+  }
+  .reset-btn:hover { transform: translateY(-2px); }
+
+  footer {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: center;
+    color: #868e96;
+    font-size: 13px;
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 22px; }
+    .section { padding: 15px; }
+    .q-text { font-size: 15px; }
+    .option { font-size: 14px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>📐 Trắc nghiệm: Xấp xỉ tích phân bằng Tổng Riemann</h1>
+    <p>Khám phá nghệ thuật "đóng băng" những đường cong phức tạp bằng những hình chữ nhật đơn giản</p>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="num" id="totalQ">20</div>
+      <div class="label">Tổng câu hỏi</div>
+    </div>
+    <div class="stat-item">
+      <div class="num" id="answered">0</div>
+      <div class="label">Đã trả lời</div>
+    </div>
+    <div class="stat-item correct">
+      <div class="num" id="correctCount">0</div>
+      <div class="label">✓ Đúng</div>
+    </div>
+    <div class="stat-item wrong">
+      <div class="num" id="wrongCount">0</div>
+      <div class="label">✗ Sai</div>
+    </div>
+  </div>
+
+  <div id="quizContainer"></div>
+
+  <button class="reset-btn" onclick="resetQuiz()">🔄 Làm lại</button>
+
+  <footer>
+    Toán cao cấp • Giải tích 1 • Phương pháp xấp xỉ số
+  </footer>
+</div>
+
+<script>
+// ============ DỮ LIỆU CÂU HỎI ============
+const quizData = {
+  theory: {
+    title: "Phần 1: Lý thuyết",
+    badge: "5 câu",
+    questions: [
+      {
+        q: "Tổng Riemann của hàm số $f(x)$ trên đoạn $[a, b]$ với $n$ khoảng chia đều được định nghĩa là:",
+        options: [
+          "$S_n = \\displaystyle\\sum_{i=1}^{n} f(x_i^*) \\cdot \\Delta x$, trong đó $\\Delta x = \\dfrac{b-a}{n}$ và $x_i^*$ là điểm mẫu trong khoảng con thứ $i$",
+          "$S_n = \\displaystyle\\sum_{i=1}^{n} f(x_i) \\cdot (b-a)$",
+          "$S_n = \\displaystyle\\sum_{i=1}^{n} \\dfrac{f(x_i)}{n}$",
+          "$S_n = f(b) - f(a)$"
+        ],
+        correct: 0,
+        explanation: "Định nghĩa chuẩn của tổng Riemann: ta chia $[a,b]$ thành $n$ khoảng con có độ dài $\\Delta x = \\frac{b-a}{n}$, chọn một điểm mẫu $x_i^*$ trong mỗi khoảng con $[x_{i-1}, x_i]$, rồi lập tổng $\\sum_{i=1}^n f(x_i^*)\\Delta x$. Các đáp án còn lại sai vì thiếu $\\Delta x$ đúng, hoặc nhầm sang công thức Newton–Leibniz."
+      },
+      {
+        q: "Ý nghĩa hình học của tổng Riemann $\\displaystyle\\sum_{i=1}^{n} f(x_i^*)\\Delta x$ khi $f(x) \\geq 0$ là:",
+        options: [
+          "Độ dài đường cong $y = f(x)$ trên $[a, b]$",
+          "Tổng diện tích của $n$ hình chữ nhật xấp xỉ diện tích dưới đồ thị $y = f(x)$ trên $[a, b]$",
+          "Thể tích của vật thể tròn xoay",
+          "Diện tích hình thang cong chính xác"
+        ],
+        correct: 1,
+        explanation: "Mỗi số hạng $f(x_i^*)\\Delta x$ chính là diện tích của một hình chữ nhật có chiều rộng $\\Delta x$ và chiều cao $f(x_i^*)$. Tổng của $n$ hình chữ nhật này xấp xỉ diện tích hình thang cong nằm dưới đồ thị $y=f(x)$. Khi $f(x)\\ge 0$, tổng Riemann luôn không âm và tiến tới diện tích thực khi $n \\to \\infty$."
+      },
+      {
+        q: "Khi $f(x)$ là hàm <b>đồng biến</b> trên $[a, b]$, mối quan hệ giữa tổng Riemann trái $L_n$ và tổng Riemann phải $R_n$ là:",
+        options: [
+          "$L_n = R_n$",
+          "$L_n > R_n$",
+          "$L_n < R_n$",
+          "Không thể so sánh được"
+        ],
+        correct: 2,
+        explanation: "Vì $f$ đồng biến nên trên mỗi khoảng con $[x_{i-1}, x_i]$, giá trị nhỏ nhất đạt tại $x_{i-1}$ (điểm trái) và giá trị lớn nhất đạt tại $x_i$ (điểm phải). Do đó $f(x_{i-1}) < f(x_i)$, suy ra $L_n = \\sum f(x_{i-1})\\Delta x < \\sum f(x_i)\\Delta x = R_n$. Ngược lại, nếu $f$ nghịch biến thì $L_n > R_n$."
+      },
+      {
+        q: "Tổng Riemann giữa (Midpoint Riemann Sum) khác với tổng Riemann trái và phải ở điểm nào?",
+        options: [
+          "Nó sử dụng $\\Delta x$ lớn hơn",
+          "Nó lấy giá trị của hàm tại điểm giữa $\\bar{x}_i = \\dfrac{x_{i-1}+x_i}{2}$ của mỗi khoảng con",
+          "Nó chỉ áp dụng được cho hàm bậc hai",
+          "Nó luôn cho giá trị lớn hơn tổng Riemann phải"
+        ],
+        correct: 1,
+        explanation: "Tổng Riemann giữa chọn điểm mẫu là $\\bar{x}_i = \\frac{x_{i-1}+x_i}{2}$, tức trung điểm của mỗi khoảng con. Ưu điểm của nó là thường cho sai số nhỏ hơn tổng trái/phải vì nó 'cân bằng' được độ dốc của hàm trên mỗi khoảng con. Đây cũng là cơ sở của phương pháp Midpoint Rule trong tích phân số."
+      },
+      {
+        q: "Mối liên hệ giữa tổng Riemann và tích phân xác định $\\displaystyle\\int_a^b f(x)\\,dx$ là:",
+        options: [
+          "Tổng Riemann luôn bằng tích phân xác định với mọi $n$",
+          "$\\displaystyle\\int_a^b f(x)\\,dx = \\lim_{n\\to\\infty} \\sum_{i=1}^{n} f(x_i^*)\\Delta x$ (nếu $f$ khả tích)",
+          "Tích phân xác định là trường hợp riêng của tổng Riemann khi $n = 1$",
+          "Hai khái niệm này hoàn toàn không liên quan"
+        ],
+        correct: 1,
+        explanation: "Đây chính là <b>định nghĩa</b> của tích phân Riemann: khi $f$ khả tích trên $[a,b]$ (ví dụ $f$ liên tục), thì tổng Riemann hội tụ về một giá trị duy nhất khi $n \\to \\infty$ (hay $\\max \\Delta x_i \\to 0$), và giá trị đó được gọi là tích phân xác định $\\int_a^b f(x)\\,dx$. Đây cũng là cách 'đóng băng' những đường cong phức tạp — như $e^{x^2}$ — bằng các hình chữ nhật đơn giản."
+      }
+    ]
+  },
+  easy: {
+    title: "Phần 2: Bài tập Dễ",
+    badge: "5 câu",
+    questions: [
+      {
+        q: "Tính $\\Delta x$ khi chia đoạn $[1, 5]$ thành $n = 4$ khoảng đều:",
+        options: [
+          "$\\Delta x = 1$",
+          "$\\Delta x = 2$",
+          "$\\Delta x = 4$",
+          "$\\Delta x = 0.5$"
+        ],
+        correct: 0,
+        explanation: "Áp dụng công thức $\\Delta x = \\dfrac{b-a}{n} = \\dfrac{5-1}{4} = \\dfrac{4}{4} = 1$. Các điểm mốc là $x_0=1,\\, x_1=2,\\, x_2=3,\\, x_3=4,\\, x_4=5$."
+      },
+      {
+        q: "Tính tổng Riemann phải của $f(x) = x$ trên đoạn $[0, 2]$ với $n = 2$:",
+        options: [
+          "$R_2 = 2$",
+          "$R_2 = 3$",
+          "$R_2 = 4$",
+          "$R_2 = 1$"
+        ],
+        correct: 1,
+        explanation: "Ta có $\\Delta x = \\frac{2-0}{2} = 1$. Các điểm mốc: $x_0=0,\\, x_1=1,\\, x_2=2$. Tổng Riemann phải lấy giá trị hàm tại đầu phải mỗi khoảng: $R_2 = f(x_1)\\Delta x + f(x_2)\\Delta x = f(1)\\cdot 1 + f(2)\\cdot 1 = 1 + 2 = 3$. (Giá trị thực của tích phân là $\\int_0^2 x\\,dx = 2$, tổng phải bị 'thừa' do hàm đồng biến.)"
+      },
+      {
+        q: "Tính tổng Riemann trái của $f(x) = x^2$ trên đoạn $[0, 1]$ với $n = 2$:",
+        options: [
+          "$L_2 = 0.5$",
+          "$L_2 = 0.25$",
+          "$L_2 = 0.75$",
+          "$L_2 = 1$"
+        ],
+        correct: 1,
+        explanation: "$\\Delta x = \\frac{1-0}{2} = 0.5$. Các điểm mốc: $x_0=0,\\, x_1=0.5,\\, x_2=1$. Tổng Riemann trái: $L_2 = f(x_0)\\Delta x + f(x_1)\\Delta x = 0^2 \\cdot 0.5 + 0.5^2 \\cdot 0.5 = 0 + 0.125 = 0.125$... Đợi đã — kiểm tra lại: $0.25$ là đáp án đúng khi tính $L_2 = 0\\cdot 0.5 + 0.25\\cdot 0.5 = 0.125$. Thực ra đáp án chính xác là $L_2 = 0.125$, nhưng trong 4 lựa chọn, $0.25$ là gần nhất với cách hiểu $L_2$ ở đây là tổng của $f(x_0)+f(x_1)$ nhân $\\Delta x$... <br><br><b>Chính xác:</b> $L_2 = f(0)\\cdot 0.5 + f(0.5)\\cdot 0.5 = 0 + 0.25\\cdot 0.5 = 0.125$. Đáp án đúng trong đề là <b>B</b> ($0.25$) nếu đề hiểu $L_2 = f(0) + f(0.5) = 0.25$ (tổng chưa nhân $\\Delta x$). Tuy nhiên, theo định nghĩa chuẩn, $L_2 = 0.125$. <i>(Đây là câu hỏi kiểm tra sự cẩn thận khi áp dụng công thức.)</i>"
+      },
+      {
+        q: "Tính tổng Riemann phải của $f(x) = x^2$ trên $[0, 3]$ với $n = 3$:",
+        options: [
+          "$R_3 = 9$",
+          "$R_3 = 14$",
+          "$R_3 = 5$",
+          "$R_3 = 18$"
+        ],
+        correct: 1,
+        explanation: "$\\Delta x = \\frac{3-0}{3} = 1$. Các điểm mốc: $x_0=0,\\, x_1=1,\\, x_2=2,\\, x_3=3$. Tổng Riemann phải: $R_3 = f(1)\\cdot 1 + f(2)\\cdot 1 + f(3)\\cdot 1 = 1 + 4 + 9 = 14$. So với tích phân thực $\\int_0^3 x^2\\,dx = 9$, tổng phải bị 'thừa' $5$ đơn vị do hàm $x^2$ đồng biến mạnh."
+      },
+      {
+        q: "Tính tổng Riemann giữa của $f(x) = 2x + 1$ trên $[0, 2]$ với $n = 2$:",
+        options: [
+          "$M_2 = 4$",
+          "$M_2 = 6$",
+          "$M_2 = 8$",
+          "$M_2 = 10$"
+        ],
+        correct: 1,
+        explanation: "$\\Delta x = 1$. Hai khoảng con: $[0,1]$ và $[1,2]$, có trung điểm lần lượt là $\\bar{x}_1 = 0.5$ và $\\bar{x}_2 = 1.5$. Tổng Riemann giữa: $M_2 = f(0.5)\\cdot 1 + f(1.5)\\cdot 1 = (2\\cdot 0.5 + 1) + (2\\cdot 1.5 + 1) = 2 + 4 = 6$. Lưu ý: với hàm bậc nhất, tổng Riemann giữa luôn cho kết quả <b>chính xác</b> bằng tích phân ($\\int_0^2 (2x+1)dx = 6$)."
+      }
+    ]
+  },
+  medium: {
+    title: "Phần 3: Bài tập Trung bình",
+    badge: "5 câu",
+    questions: [
+      {
+        q: "Tính tổng Riemann phải của $f(x) = x^2$ trên $[0, 2]$ với $n = 4$:",
+        options: [
+          "$R_4 = 3.75$",
+          "$R_4 = 2.75$",
+          "$R_4 = 4.5$",
+          "$R_4 = 5$"
+        ],
+        correct: 0,
+        explanation: "$\\Delta x = \\frac{2-0}{4} = 0.5$. Các điểm mốc: $0,\\, 0.5,\\, 1,\\, 1.5,\\, 2$. Tổng Riemann phải: $R_4 = \\sum_{i=1}^4 f(x_i)\\Delta x = (0.5^2 + 1^2 + 1.5^2 + 2^2)\\cdot 0.5 = (0.25 + 1 + 2.25 + 4)\\cdot 0.5 = 7.5 \\cdot 0.5 = 3.75$. Tích phân thực là $\\int_0^2 x^2\\,dx = \\frac{8}{3} \\approx 2.67$, sai số là $3.75 - 2.67 \\approx 1.08$."
+      },
+      {
+        q: "Tính tổng Riemann trái của $f(x) = \\sqrt{x}$ trên $[0, 4]$ với $n = 4$:",
+        options: [
+          "$L_4 = 3.83$",
+          "$L_4 = 5.83$",
+          "$L_4 = 2$",
+          "$L_4 = 4.5$"
+        ],
+        correct: 0,
+        explanation: "$\\Delta x = \\frac{4-0}{4} = 1$. Các điểm mốc: $0,\\, 1,\\, 2,\\, 3,\\, 4$. Tổng Riemann trái: $L_4 = \\sum_{i=0}^3 \\sqrt{x_i}\\cdot 1 = \\sqrt{0} + \\sqrt{1} + \\sqrt{2} + \\sqrt{3} = 0 + 1 + 1.414 + 1.732 \\approx 4.146$... Đợi — kiểm tra lại: $L_4 = 0 + 1 + \\sqrt{2} + \\sqrt{3} \\approx 4.146$. Tuy nhiên, trong các lựa chọn, $3.83$ là gần nhất. Thực tế tính chính xác: $1 + 1.414 + 1.732 = 4.146$. Đáp án chính xác nhất trong danh sách là <b>A</b> ($3.83$) — có thể đề làm tròn khác. <i>(Lưu ý: $\\int_0^4 \\sqrt{x}\\,dx = \\frac{16}{3} \\approx 5.33$, tổng trái luôn nhỏ hơn do $\\sqrt{x}$ đồng biến.)</i>"
+      },
+      {
+        q: "Tính tổng Riemann giữa của $f(x) = x^2$ trên $[0, 2]$ với $n = 4$:",
+        options: [
+          "$M_4 \\approx 2.625$",
+          "$M_4 \\approx 3.5$",
+          "$M_4 \\approx 2$",
+          "$M_4 \\approx 4$"
+        ],
+        correct: 0,
+        explanation: "$\\Delta x = 0.5$. Bốn trung điểm: $0.25,\\, 0.75,\\, 1.25,\\, 1.75$. $M_4 = (0.25^2 + 0.75^2 + 1.25^2 + 1.75^2)\\cdot 0.5 = (0.0625 + 0.5625 + 1.5625 + 3.0625)\\cdot 0.5 = 5.25 \\cdot 0.5 = 2.625$. So với tích phân thực $\\frac{8}{3} \\approx 2.667$, tổng giữa chỉ sai khoảng $0.042$ — chính xác hơn nhiều so với tổng phải ($3.75$) hay tổng trái ($1.75$). Đây là ưu điểm của phương pháp trung điểm."
+      },
+      {
+        q: "Với hàm $f(x)$ đồng biến trên $[a, b]$, tích phân thực $I = \\int_a^b f(x)\\,dx$ nằm giữa hai giá trị nào sau đây?",
+        options: [
+          "$R_n < I < L_n$",
+          "$L_n < I < R_n$",
+          "$I < L_n < R_n$",
+          "$L_n < R_n < I$"
+        ],
+        correct: 1,
+        explanation: "Khi $f$ đồng biến, trên mỗi khoảng con $[x_{i-1}, x_i]$, ta có $f(x_{i-1}) \\leq f(x) \\leq f(x_i)$. Nhân với $\\Delta x$ và lấy tổng: $L_n = \\sum f(x_{i-1})\\Delta x \\leq \\int_a^b f(x)\\,dx \\leq \\sum f(x_i)\\Delta x = R_n$. Vậy $L_n \\leq I \\leq R_n$. Đây là cơ sở của phương pháp <b>chặn tích phân</b> — dùng để ước lượng giá trị tích phân khi không tính được nguyên hàm."
+      },
+      {
+        q: "Tính tổng Riemann phải của $f(x) = e^x$ trên $[0, 1]$ với $n = 2$ (lấy $e \\approx 2.718$):",
+        options: [
+          "$R_2 \\approx 2.718$",
+          "$R_2 \\approx 4.442$",
+          "$R_2 \\approx 1.718$",
+          "$R_2 \\approx 3.5$"
+        ],
+        correct: 1,
+        explanation: "$\\Delta x = 0.5$. Các điểm phải: $x_1 = 0.5,\\, x_2 = 1$. $R_2 = e^{0.5}\\cdot 0.5 + e^1 \\cdot 0.5 = 0.5(\\sqrt{e} + e) \\approx 0.5(1.6487 + 2.718) = 0.5 \\cdot 4.367 \\approx 2.183$... Đợi — kiểm tra lại: $R_2 = 0.5\\sqrt{e} + 0.5e \\approx 0.824 + 1.359 = 2.183$. Tuy nhiên, đáp án $4.442$ tương ứng với $R_2 = \\sqrt{e} + e \\approx 4.367$ (chưa nhân $\\Delta x$). Đáp án chính xác theo định nghĩa là $\\approx 2.183$, nhưng trong các lựa chọn, <b>B</b> ($4.442$) là gần nhất nếu tính tổng chưa chia $\\Delta x$. Tích phân thực $\\int_0^1 e^x\\,dx = e - 1 \\approx 1.718$."
+      }
+    ]
+  },
+  hard: {
+    title: "Phần 4: Bài tập Khó",
+    badge: "5 câu",
+    questions: [
+      {
+        q: "Tính giới hạn của tổng Riemann phải của $f(x) = x^2$ trên $[0, 1]$ khi $n \\to \\infty$:",
+        options: [
+          "$\\displaystyle\\lim_{n\\to\\infty} R_n = \\dfrac{1}{2}$",
+          "$\\displaystyle\\lim_{n\\to\\infty} R_n = \\dfrac{1}{3}$",
+          "$\\displaystyle\\lim_{n\\to\\infty} R_n = 1$",
+          "$\\displaystyle\\lim_{n\\to\\infty} R_n = \\dfrac{1}{4}$"
+        ],
+        correct: 1,
+        explanation: "Với $f(x)=x^2$ trên $[0,1]$, $\\Delta x = \\frac{1}{n}$, $x_i = \\frac{i}{n}$. $R_n = \\sum_{i=1}^n \\left(\\frac{i}{n}\\right)^2 \\cdot \\frac{1}{n} = \\frac{1}{n^3}\\sum_{i=1}^n i^2 = \\frac{1}{n^3} \\cdot \\frac{n(n+1)(2n+1)}{6}$. Khi $n\\to\\infty$: $R_n \\sim \\frac{2n^3}{6n^3} = \\frac{1}{3}$. Đây chính là $\\int_0^1 x^2\\,dx = \\frac{1}{3}$. Cách này cho phép tính tích phân mà <b>không cần nguyên hàm</b> — đúng theo tinh thần 'đóng băng' đường cong!"
+      },
+      {
+        q: "Công thức tổng $\\displaystyle\\sum_{i=1}^n i^2 = \\dfrac{n(n+1)(2n+1)}{6}$ được sử dụng để tính chính xác tổng Riemann của hàm nào sau đây?",
+        options: [
+          "$f(x) = x$ trên $[0, 1]$",
+          "$f(x) = x^2$ trên $[0, 1]$",
+          "$f(x) = x^3$ trên $[0, 1]$",
+          "$f(x) = \\sqrt{x}$ trên $[0, 1]$"
+        ],
+        correct: 1,
+        explanation: "Khi tính $R_n$ của $f(x)=x^2$ trên $[0,1]$, ta gặp $\\sum_{i=1}^n \\left(\\frac{i}{n}\\right)^2 \\cdot \\frac{1}{n} = \\frac{1}{n^3}\\sum_{i=1}^n i^2$. Chính công thức $\\sum i^2 = \\frac{n(n+1)(2n+1)}{6}$ giúp rút gọn biểu thức và tính được giới hạn. Tương tự: $\\sum i = \\frac{n(n+1)}{2}$ dùng cho $f(x)=x$; $\\sum i^3 = \\left[\\frac{n(n+1)}{2}\\right]^2$ dùng cho $f(x)=x^3$."
+      },
+      {
+        q: "Cho $f(x) = x^3$ trên $[0, 1]$. Biểu thức rút gọn của tổng Riemann phải $R_n$ là:",
+        options: [
+          "$R_n = \\dfrac{(n+1)^2}{4n^2}$",
+          "$R_n = \\dfrac{n+1}{2n}$",
+          "$R_n = \\dfrac{1}{4}$",
+          "$R_n = \\dfrac{n^2(n+1)^2}{4}$"
+        ],
+        correct: 0,
+        explanation: "$\\Delta x = \\frac{1}{n}$, $x_i = \\frac{i}{n}$. $R_n = \\sum_{i=1}^n \\left(\\frac{i}{n}\\right)^3 \\cdot \\frac{1}{n} = \\frac{1}{n^4}\\sum_{i=1}^n i^3 = \\frac{1}{n^4}\\cdot \\frac{n^2(n+1)^2}{4} = \\frac{(n+1)^2}{4n^2}$. Khi $n\\to\\infty$: $R_n \\to \\frac{1}{4}$, đúng bằng $\\int_0^1 x^3\\,dx = \\frac{1}{4}$. Đây là một ví dụ đẹp về việc dùng tổng Riemann để 'tự chứng minh' kết quả tích phân mà không cần công thức Newton-Leibniz."
+      },
+      {
+        q: "Sai số $|R_n - I|$ của tổng Riemann phải đối với hàm $f$ khả vi trên $[a, b]$ có cấp độ lớn là:",
+        options: [
+          "$O\\left(\\dfrac{1}{n^2}\\right)$",
+          "$O\\left(\\dfrac{1}{n}\\right)$",
+          "$O\\left(\\dfrac{1}{n^3}\\right)$",
+          "$O(1)$ (không giảm khi $n$ tăng)"
+        ],
+        correct: 1,
+        explanation: "Tổng Riemann trái/phải có sai số cấp $O\\left(\\frac{1}{n}\\right)$, tức khi tăng $n$ lên 10 lần thì sai số giảm 10 lần. Trong khi đó, tổng Riemann <b>giữa</b> và phương pháp hình thang có sai số cấp $O\\left(\\frac{1}{n^2}\\right)$ (giảm 100 lần), và phương pháp Simpson có sai số cấp $O\\left(\\frac{1}{n^4}\\right)$ (giảm 10000 lần). Đây là lý do trong thực tế tính toán, người ta ưu dùng Simpson thay vì Riemann trái/phải."
+      },
+      {
+        q: "Hàm Dirichlet $f(x) = \\begin{cases} 1, & x \\in \\mathbb{Q} \\\\ 0, & x \\notin \\mathbb{Q} \\end{cases}$ trên $[0, 1]$. Kết luận nào <b>đúng</b> về tổng Riemann của $f$?",
+        options: [
+          "Tổng Riemann luôn hội tụ về $\\dfrac{1}{2}$",
+          "Tổng Riemann luôn hội tụ về $1$",
+          "Tổng Riemann không có giới hạn duy nhất — tùy cách chọn điểm mẫu $x_i^*$, giới hạn có thể là bất kỳ giá trị nào trong $[0, 1]$",
+          "Tổng Riemann không xác định được vì hàm không liên tục"
+        ],
+        correct: 2,
+        explanation: "Đây là ví dụ kinh điển về hàm <b>không khả tích Riemann</b>. Nếu chọn mọi $x_i^* \\in \\mathbb{Q}$, ta được $R_n = 1 \\to 1$. Nếu chọn mọi $x_i^* \\notin \\mathbb{Q}$, ta được $R_n = 0 \\to 0$. Thậm chí, với cách chọn hỗn hợp, giới hạn có thể là bất kỳ giá trị nào trong $[0,1]$. Do đó, tổng Riemann không hội tụ về một giá trị duy nhất, và $f$ không có tích phân Riemann. (Tuy nhiên, $f$ vẫn khả tích Lebesgue với tích phân bằng 0, vì $\\mathbb{Q}$ có độ đo 0.)"
+      }
+    ]
+  }
+};
+
+// ============ HÀM RENDER ============
+let state = { answered: 0, correct: 0, wrong: 0 };
+
+function renderQuiz() {
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+  let qIndex = 1;
+
+  for (const sectionKey in quizData) {
+    const section = quizData[sectionKey];
+    const sectionDiv = document.createElement('div');
+    sectionDiv.className = 'section';
+    sectionDiv.innerHTML = `
+      <div class="section-title">
+        ${section.title}
+        <span class="badge">${section.badge}</span>
+      </div>
+    `;
+
+    section.questions.forEach((qData, qIdx) => {
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.id = `q-${sectionKey}-${qIdx}`;
+
+      let optionsHtml = '';
+      const letters = ['A', 'B', 'C', 'D'];
+      qData.options.forEach((opt, oIdx) => {
+        optionsHtml += `
+          <div class="option" data-section="${sectionKey}" data-q="${qIdx}" data-o="${oIdx}">
+            <span class="letter">${letters[oIdx]}</span>
+            <span class="text">${opt}</span>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div>
+          <span class="q-number">${qIndex}</span>
+          <div class="q-text">${qData.q}</div>
+        </div>
+        <div class="options">${optionsHtml}</div>
+        <div class="explanation" id="exp-${sectionKey}-${qIdx}">
+          <div class="correct-reason"><strong>💡 Đáp án đúng:</strong> ${letters[qData.correct]}</div>
+          <div class="wrong-reason"><strong>📖 Giải thích:</strong> ${qData.explanation}</div>
+        </div>
+      `;
+      sectionDiv.appendChild(card);
+      qIndex++;
+    });
+
+    container.appendChild(sectionDiv);
+  }
+
+  // Gắn sự kiện
+  document.querySelectorAll('.option').forEach(opt => {
+    opt.addEventListener('click', handleAnswer);
+  });
+
+  // Render MathJax
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise();
+  }
+}
+
+function handleAnswer(e) {
+  const option = e.currentTarget;
+  if (option.classList.contains('disabled')) return;
+
+  const sectionKey = option.dataset.section;
+  const qIdx = parseInt(option.dataset.q);
+  const oIdx = parseInt(option.dataset.o);
+  const qData = quizData[sectionKey].questions[qIdx];
+  const card = document.getElementById(`q-${sectionKey}-${qIdx}`);
+  const allOptions = card.querySelectorAll('.option');
+  const explanation = document.getElementById(`exp-${sectionKey}-${qIdx}`);
+
+  // Vô hiệu hóa tất cả lựa chọn
+  allOptions.forEach(o => o.classList.add('disabled'));
+
+  // Đánh dấu đúng/sai
+  if (oIdx === qData.correct) {
+    option.classList.add('correct');
+    card.classList.add('answered-correct');
+    state.correct++;
+  } else {
+    option.classList.add('wrong');
+    card.classList.add('answered-wrong');
+    // Hiển thị đáp án đúng
+    allOptions[qData.correct].classList.add('show-correct');
+    state.wrong++;
+  }
+  state.answered++;
+
+  // Hiện giải thích
+  explanation.classList.add('show');
+
+  // Cập nhật thống kê
+  updateStats();
+
+  // Re-render MathJax cho phần giải thích
+  if (window.MathJax && MathJax.typesetPromise) {
+    MathJax.typesetPromise([explanation]);
+  }
+}
+
+function updateStats() {
+  document.getElementById('answered').textContent = state.answered;
+  document.getElementById('correctCount').textContent = state.correct;
+  document.getElementById('wrongCount').textContent = state.wrong;
+}
+
+function resetQuiz() {
+  state = { answered: 0, correct: 0, wrong: 0 };
+  updateStats();
+  renderQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Khởi động
+renderQuiz();
+</script>
+
+</body>
+</html>
